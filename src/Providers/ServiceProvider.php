@@ -17,13 +17,15 @@ class ServiceProvider extends BaseServiceProvider
 
     public function boot()
     {
-        Route::macro('zatara', function () {
+        Route::middleware('web')->group(function () {
             ZataraFacade::actions()->each(fn ($action) => (
                 Route::match(
                     [$action->route->method],
                     $action->route->uri,
                     $action->classname
-                )->name($action->name)
+                )
+                    ->name($action->route->name)
+                    ->middleware($action->route->middleware)
             ));
         });
     }
