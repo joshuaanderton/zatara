@@ -10,6 +10,23 @@ use ReflectionProperty;
 
 class Zatara
 {
+    const CRUD_ACTIONS = [
+        'index' => 'get',
+        'show' => 'get',
+        'edit' => 'get',
+        'create' => 'get',
+        'store' => 'post',
+        'update' => 'put',
+        'destroy' => 'delete'
+    ];
+
+    const CRUD_LOOKUP_ACTIONS = [
+        'show',
+        'update',
+        'edit',
+        'destroy'
+    ];
+
     protected Application $app;
 
     public Collection $actions;
@@ -20,7 +37,7 @@ class Zatara
         $this->actions = $this->buildActions();
     }
 
-    public function getActionNamespace(): string
+    public function actionNamespace(): string
     {
         return 'App\\Http\\Zatara\\';
     }
@@ -43,13 +60,15 @@ class Zatara
             return $uri;
         }
 
-        return (
+        $uri = (
             str($classname)
-                ->remove($this->getActionNamespace())
+                ->remove($this->actionNamespace())
                 ->explode('\\')
                 ->map(fn ($str) => str($str)->snake('-')->toString())
                 ->join('/')
         );
+
+        return $uri;
     }
 
     public function actionMiddleware(string $classname): array
@@ -60,7 +79,7 @@ class Zatara
             (new ReflectionProperty($classname, 'middlewareAppend'))->getDefaultValue() ?? []
         );
 
-        if (str($classname)->startsWith($this->getActionNamespace().'Dashboard')) {
+        if (str($classname)->startsWith($this->actionNamespace().'Dashboard')) {
             $middleware->merge([
                 'auth:sanctum',
                 'verified',
@@ -71,38 +90,37 @@ class Zatara
         return $middleware->toArray();
     }
 
+    public function actionMethod(string $classname): string
+    {
+        $parseClassname = str($classname)->remove($this->actionNamespace())->explode('\\');
+        $action = $parseClassname->map('strtolower')->last();
+
+        $method = (
+            (new ReflectionProperty($classname, 'method'))->getDefaultValue() ?? self::CRUD_ACTIONS[$action] ?? 'get'
+        );
+
+        return $method;
+    }
+
     public function buildAction(string $classname): object
     {
-        $parseClassname = str($classname)->remove($this->getActionNamespace())->explode('\\');
-        $middleware = Zatara::actionMiddleware($classname);
-        $uri = Zatara::actionUri($classname);
+        $parseClassname = str($classname)->remove($this->actionNamespace())->explode('\\');
+        $middleware = $this->actionMiddleware($classname);
 
-        $crudActions = [
-            'index' => 'get',
-            'show' => 'get',
-            'edit' => 'get',
-            'create' => 'get',
-            'store' => 'post',
-            'update' => 'put',
-            'destroy' => 'delete'
-        ];
-
-        $crudLookupActions = [
-            'show',
-            'update',
-            'edit',
-            'destroy'
-        ];
+        /**
+         * @var string
+         */
+        $uri = $this->actionUri($classname);
 
         $action = $parseClassname->map('strtolower')->last();
 
-        if (in_array($action, array_keys($crudActions))) {
+        if (in_array($action, array_keys(self::CRUD_ACTIONS))) {
             $uri = str($uri)->beforeLast("/{$action}");
         }
 
         $modelKey = null;
 
-        if (in_array($action, $crudLookupActions)) {
+        if (in_array($action, self::CRUD_LOOKUP_ACTIONS)) {
             $modelKey = (
                 str(
                     $parseClassname
@@ -114,7 +132,13 @@ class Zatara
                     ->snake()
                     ->toString()
             );
+
+            if (! str($uri)->contains('/'.'{'.$modelKey.'}')) {
+                $uri = str($uri)->append('/'.'{'.$modelKey.'}')->toString();
+            }
         }
+
+        $method = $this->actionMethod($classname);
 
         $data = [
             'classname' => $classname,
@@ -123,7 +147,7 @@ class Zatara
             'route' => (object) [
                 'uri' => $uri,
                 'name' => $parseClassname->map(fn ($str) => str($str)->snake('-')->toString())->join('.'),
-                'method' => $crudActions[$action] ?? 'post',
+                'method' => $method,
                 'middleware' => $middleware,
                 'param' => $modelKey,
             ]
@@ -137,7 +161,7 @@ class Zatara
         $classFiles = File::allFiles(base_path('app/Http/Zatara'));
 
         return collect($classFiles)->map(fn ($file) => $this->buildAction(
-            $this->getActionNamespace() . (
+            $this->actionNamespace() . (
                 str($file->getRelativePathname())
                     ->remove('.php')
                     ->explode('/')

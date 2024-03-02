@@ -14,13 +14,18 @@ abstract class Action
     public string $uri;
 
     /**
+     * @var get|post|put|delete
+     */
+    public string $method;
+
+    /**
      * @var string[]
      */
     public array $middlewareAppend = [];
 
     protected ?object $action = null;
 
-    abstract public function handle(Request $request): array;
+    abstract public function handle(Request $request): array|\Illuminate\Http\RedirectResponse;
 
     public function __invoke(Request $request): JsonResponse|RedirectResponse|InertiaResponse
     {
@@ -33,6 +38,10 @@ abstract class Action
         }
 
         $data = $this->handle($request);
+
+        if ($data instanceof RedirectResponse) {
+            return $data;
+        }
 
         // InertiaJS Support
         if ($this->isInertia($request)) {

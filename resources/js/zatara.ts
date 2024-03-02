@@ -18,10 +18,6 @@ export default class {
   submit() {
     const url = ziggyRoute(this.route, this.params)
 
-    console.log(
-      url
-    )
-
     // Get route method from ziggy
     // if (method === 'GET') {
     //   return axios.get(url)
