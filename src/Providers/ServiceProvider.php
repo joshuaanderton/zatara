@@ -20,12 +20,12 @@ class ServiceProvider extends BaseServiceProvider
         Route::middleware('web')->group(function () {
             ZataraFacade::actions()->each(fn ($action) => (
                 Route::match(
-                    [$action->route->method],
-                    $action->route->uri,
+                    $action->method,
+                    $action->uri,
                     $action->classname
                 )
-                    ->name($action->route->name)
-                    ->middleware($action->route->middleware)
+                    ->name($action->route)
+                    ->middleware($action->middleware)
             ));
         });
     }
