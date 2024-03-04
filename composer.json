@@ -9,7 +9,14 @@
         }
     ],
     "require": {
-        "php": "^8.1|^8.2"
+        "php": "^8.2",
+        "illuminate/support": "^10.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0",
+        "orchestra/testbench": "^8.0",
+        "pestphp/pest-plugin-laravel": "^2.3",
+        "pestphp/pest-plugin-watch": "^2.1"
     },
     "autoload": {
         "psr-4": {
@@ -21,8 +28,15 @@
             "Zatara\\Tests\\": "tests"
         }
     },
+    "scripts": {
+        "test": "vendor/bin/pest tests",
+        "test-coverage": "vendor/bin/pest tests --coverage"
+    },
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
     },
     "extra": {
         "laravel": {
