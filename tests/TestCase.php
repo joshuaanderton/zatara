@@ -19,10 +19,22 @@ class TestCase extends BaseTestCase
             ]);
 
             // Setup queue database connections.
-            $config([
+            $config->set([
                 'queue.batching.database' => 'testbench',
                 'queue.failed.database' => 'testbench',
             ]);
         });
+    }
+
+    /**
+     * Define routes setup.
+     *
+     * @param  \Illuminate\Routing\Router  $router
+     * @return void
+     */
+    protected function defineRoutes($router)
+    {
+        // Define routes.
+        $router->get('/', fn () => response('Hello world!'));
     }
 }
