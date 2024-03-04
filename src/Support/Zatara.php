@@ -3,23 +3,11 @@
 namespace Zatara\Support;
 
 use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
-use ReflectionProperty;
 
 class Zatara
 {
-    const CRUD_ACTIONS = [
-        'index' => 'get',
-        'show' => 'get',
-        'edit' => 'get',
-        'create' => 'get',
-        'store' => 'post',
-        'update' => 'put',
-        'destroy' => 'delete'
-    ];
-
     protected Application $app;
 
     public Collection $actions;
@@ -30,7 +18,7 @@ class Zatara
         $this->actions = $this->buildActions();
     }
 
-    public function routeActionNamespace(): string
+    public static function routeActionNamespace(): string
     {
         return 'App\\Zatara\\Http\\';
     }
@@ -42,45 +30,50 @@ class Zatara
 
     /**
      * @param string $classname
-     * @return object
+     * @return array
      */
-    public function buildAction(string $classname): object
+    public function buildAction(string $classname): array
     {
-        return (object) [
-            'classname' => $classname,
-            'route' => $classname::getRoute(),
-            'uri' => $classname::getUri(),
-            'method' => $classname::getMethod(),
-            'middleware' => $classname::getMiddleware(),
+        $actionMeta = new ActionMeta($classname);
+
+        return [
+            'uri' => $actionMeta->uri,
+            'methods' => [
+                $actionMeta->method
+            ],
+            'action' => [
+                'uses' => [$classname, '__invoke'],
+                'controller' => $classname,
+                'middleware' => $actionMeta->middleware,
+                'as' => $actionMeta->as,
+                // 'namespace' => null
+                // 'prefix' => '',
+                // 'where' => []
+            ]
         ];
     }
 
     public function buildActions(): Collection
     {
+        $actionNamespace = str($this->routeActionNamespace());
         $classFiles = File::allFiles(
             base_path(
-                str($this->routeActionNamespace())
+                $actionNamespace
                     ->replace('\\', '/')
                     ->replace('App', 'app')
             )
         );
 
         return collect($classFiles)->map(fn ($file) => $this->buildAction(
-            $this->routeActionNamespace() . (
-                str($file->getRelativePathname())
-                    ->remove('.php')
-                    ->explode('/')
-                    ->map(fn ($str) => str($str)->studly()->toString())
-                    ->join('\\')
-            )
+            $actionNamespace
+                ->append(
+                    str($file->getRelativePathname())
+                        ->remove('.php')
+                        ->explode('/')
+                        ->map(fn ($str) => str($str)->studly()->toString())
+                        ->join('\\')
+                )
+                ->toString()
         ));
-    }
-
-    /**
-     * @param $name "index"|"show"|"edit"|"create"|"store"|"update"|"destroy"
-     */
-    public function getMethodForActionName(string $name)
-    {
-        return self::CRUD_ACTIONS[$name] ?? null;
     }
 }
