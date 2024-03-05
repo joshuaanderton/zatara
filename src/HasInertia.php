@@ -13,10 +13,10 @@ trait HasInertia
         return class_exists(\Inertia\Inertia::class) && ! ($request->ajax() && ! $request->headers->get('X-Inertia'));
     }
 
-    public function inertiaResponse(Request $request, array|RedirectResponse $response)
+    public function inertiaResponse(Request $request, array $response)
     {
-        if ($response instanceof RedirectResponse) {
-            return $response;
+        if ($route = $response['redirect'] ?? null) {
+            return redirect()->to($route);
         }
 
         $view = (new ActionMeta(get_called_class()))->view;

@@ -105,11 +105,11 @@ class ActionMeta
             $this->getProp('middlewareAppend', [])
         );
 
-        if (str($this->classname)->startsWith([
-            $this->routeActionNamespace.'Dashboard',
-            $this->routeActionNamespace.'Auth'
-        ])) {
-            $middleware->merge([
+        if (
+            str($this->classname)
+                ->startsWith($this->routeActionNamespace.'Dashboard')
+        ) {
+            $middleware = $middleware->merge([
                 'auth:sanctum',
                 'verified',
                 'Laravel\Jetstream\Http\Middleware\AuthenticateSession'
@@ -121,13 +121,7 @@ class ActionMeta
 
     private function getMethod(): string
     {
-        $action = str(class_basename($this->classname))->lower()->toString();
-
-        $method = (
-            $this->getProp('method', $this->getMethodForActionName(), 'get')
-        );
-
-        return $method;
+        return $this->getProp('method', $this->getMethodForActionName(), 'get');
     }
 
     private function getView()

@@ -33,9 +33,9 @@ abstract class Action
     /**
      * Handle the incoming request. Return array of data for the current client state or a redirect response to a new state.
      * @param Request $request
-     * @return array|\Illuminate\Http\RedirectResponse
+     * @return array
      */
-    abstract public function handle(Request $request): array|\Illuminate\Http\RedirectResponse;
+    abstract public function handle(Request $request): array;
 
     public function gate(Request $request): bool
     {
