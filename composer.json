@@ -41,7 +41,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Zatara\\Providers\\ServiceProvider"
+                "Zatara\\ServiceProvider"
             ]
         }
     }

@@ -18,9 +18,9 @@ class ActionMeta
         'destroy' => 'delete'
     ];
 
-    public string $classname;
+    public string $actionClassname;
 
-    protected string $routeActionNamespace;
+    protected string $actionNamespace;
 
     protected Collection $parseClassname;
 
@@ -34,11 +34,11 @@ class ActionMeta
 
     public string $view;
 
-    public function __construct(string $classname)
+    public function __construct(string $actionClassname)
     {
-        $this->classname = $classname;
-        $this->routeActionNamespace = Zatara::routeActionNamespace();
-        $this->parseClassname = str($this->classname)->remove($this->routeActionNamespace)->explode('\\');
+        $this->actionClassname = $actionClassname;
+        $this->actionNamespace = Zatara::actionNamespace();
+        $this->parseClassname = str($this->actionClassname)->remove($this->actionNamespace)->explode('\\');
         $this->uri = $this->getUri();
         $this->method = $this->getMethod();
         $this->middleware = $this->getMiddleware();
@@ -48,19 +48,25 @@ class ActionMeta
 
     private function getRouteAction(): string
     {
-        return str(class_basename($this->classname))->lower()->toString();
+        return str(class_basename($this->actionClassname))->lower()->toString();
     }
 
     private function getUri(): string
     {
-        if ($uri = $this->getProp('uri') ?? null) {
+        $prop = new ReflectionProperty($this->actionClassname, 'uri');
+
+        if ($uri = $prop->getDefaultValue() ?? null) {
             return $uri;
+        }
+
+        if ($this->actionClassname === 'App\\Zatara\\Welcome') {
+            return '/';
         }
 
         $uri = $this->parseClassname->map(fn ($str) => str($str)->snake('-')->toString())->join('/');
         $action = $this->getRouteAction();
 
-        if ($this->getMethodForActionName() !== null) {
+        if (in_array($action, ['index', 'store', 'destroy', 'update'])) {
             $uri = str($uri)->beforeLast("/{$action}");
         }
 
@@ -101,15 +107,11 @@ class ActionMeta
     {
         $middleware = collect('web');
 
-        $middleware = $middleware->merge(
-            $this->getProp('middlewareAppend', [])
-        );
-
         if (
-            str($this->classname)
-                ->startsWith($this->routeActionNamespace.'Dashboard')
+            str($this->actionClassname)->startsWith($this->actionNamespace.'Dashboard')
         ) {
             $middleware = $middleware->merge([
+                'auth',
                 'auth:sanctum',
                 'verified',
                 'Laravel\Jetstream\Http\Middleware\AuthenticateSession'
@@ -119,25 +121,28 @@ class ActionMeta
         return $middleware->toArray();
     }
 
-    private function getMethod(): string
-    {
-        return $this->getProp('method', $this->getMethodForActionName(), 'get');
-    }
-
     private function getView()
     {
         return $this->parseClassname->map(fn ($str) => str($str)->studly()->toString())->join('/');
     }
 
-    private function getProp(string $property, mixed ...$default): array|string|null
+    private function getMethod(): string
     {
-        $value = (new ReflectionProperty($this->classname, $property))->getDefaultValue() ?? null;
+        $method = $this->getMethodForActionName();
 
-        if ($value === null) {
-            return collect($default)->filter(fn ($def) => ! ! $def)->first() ?? null;
+        if ($method === null) {
+            $name = str($this->actionClassname);
+
+            if ($name->endsWith('Store')) {
+                $method = 'post';
+            } else if ($name->endsWith('Update')) {
+                $method = 'put';
+            } else if ($name->endsWith(['Destroy', 'Remove'])) {
+                $method = 'delete';
+            }
         }
 
-        return $value;
+        return $method ?: 'get';
     }
 
     public function getMethodForActionName()

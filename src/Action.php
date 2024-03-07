@@ -2,90 +2,56 @@
 
 namespace Zatara;
 
-use App\Models\User;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
-use Inertia\Response as InertiaResponse;
-use Zatara\Support\Facades\Zatara;
-use Illuminate\Http\Request;
+use Illuminate\Http\Request as HttpRequest;
+use Zatara\Request;
 use Illuminate\Support\Facades\Gate;
-use ReflectionProperty;
-use Zatara\Support\ActionMeta;
+use Illuminate\Support\Facades\Validator;
 
 abstract class Action
 {
-    use HasInertia;
-
     public string $uri;
 
     /**
-     * @var "get"|"post"|"put"|"delete"
-     */
-    public string $method;
-
-    /**
-     * Array of middleware keys or classnames to append to the default middleware.
-     * @var string[]
-     */
-    public array $middlewareAppend = [];
-
-    /**
      * Handle the incoming request. Return array of data for the current client state or a redirect response to a new state.
-     * @param Request $request
+     * @param \Zatara\Request $request
      * @return array
      */
     abstract public function handle(Request $request): array;
 
-    public function gate(Request $request): bool
+    final public function __invoke(HttpRequest $request): mixed
+    {
+        $request = Request::createFrom($request);
+
+        // Authorize request
+        Gate::allowIf($this->authorize($request));
+
+        // Validate request data
+        Validator::make($request->all(), $this->validate($request))->validate();
+
+        // Pass request to action handler
+        $data = $this->handle($request);
+
+        // Create response from action data
+        $response = new Response($data, 200);
+
+        return $this->response($request, $response);
+    }
+
+    public function response(Request $request, Response $response): mixed
+    {
+        $middleware = 'App\\Http\\Middleware\\HandleZataraRequests';
+        $middleware = class_exists($middleware) ? $middleware : Middleware::class;
+
+        return (new $middleware)->response($request, $response);
+    }
+
+    public function authorize(Request $request): bool
     {
         return true;
     }
 
-    public function rules(Request $request): array
+    public function validate(Request $request): array
     {
         return [];
-    }
-
-    protected function to(string $name, ?array $parameters = []): RedirectResponse
-    {
-        return redirect()->route($name, $parameters);
-    }
-
-    protected function back(): RedirectResponse
-    {
-        return redirect()->back();
-    }
-
-    public function __invoke(Request $request): JsonResponse|RedirectResponse|InertiaResponse
-    {
-        $currentRoute = $request->route();
-        $classname = str($currentRoute->getAction('controller'))->before('@')->toString();
-
-        if (method_exists($classname, 'gate')) {
-            Gate::allowIf(
-                $this->gate($request)
-            );
-        }
-
-        if (method_exists($classname, 'rules')) {
-            $request->validate(
-                $this->rules($request)
-            );
-        }
-
-        $response = $this->handle($request);
-
-        // InertiaJS Support
-        // class_uses($classname, HasInertia::class) &&
-        if ($this->acceptsInertia($request)) {
-            return $this->inertiaResponse($request, $response);
-        }
-
-        if ($response instanceof RedirectResponse) {
-            return $response;
-        }
-
-        return response()->json($response, 200);
     }
 }

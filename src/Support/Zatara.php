@@ -18,9 +18,9 @@ class Zatara
         $this->actions = $this->buildActions();
     }
 
-    public static function routeActionNamespace(): string
+    public static function actionNamespace(): string
     {
-        return 'App\\Zatara\\Http\\';
+        return 'App\\Zatara\\';
     }
 
     public function actions()
@@ -55,7 +55,7 @@ class Zatara
 
     public function buildActions(): Collection
     {
-        $actionNamespace = str($this->routeActionNamespace());
+        $actionNamespace = str($this->actionNamespace());
         $classFiles = File::allFiles(
             base_path(
                 $actionNamespace
