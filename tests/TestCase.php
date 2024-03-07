@@ -13,9 +13,9 @@ class TestCase extends BaseTestCase
         tap($app['config'], function (Repository $config) {
             $config->set('database.default', 'testbench');
             $config->set('database.connections.testbench', [
-                'driver'   => 'sqlite',
+                'driver' => 'sqlite',
                 'database' => ':memory:',
-                'prefix'   => '',
+                'prefix' => '',
             ]);
 
             // Setup queue database connections.

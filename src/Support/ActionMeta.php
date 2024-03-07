@@ -4,7 +4,6 @@ namespace Zatara\Support;
 
 use Illuminate\Support\Collection;
 use ReflectionProperty;
-use Zatara\Support\Zatara;
 
 class ActionMeta
 {
@@ -15,7 +14,7 @@ class ActionMeta
         'create' => 'get',
         'store' => 'post',
         'update' => 'put',
-        'destroy' => 'delete'
+        'destroy' => 'delete',
     ];
 
     public string $actionClassname;
@@ -96,11 +95,10 @@ class ActionMeta
 
     private function getAs(): string
     {
-        return (
+        return
             $this->parseClassname
                 ->map(fn ($str) => str($str)->snake('-')->toString())
-                ->join('.')
-        );
+                ->join('.');
     }
 
     private function getMiddleware(): array
@@ -114,7 +112,7 @@ class ActionMeta
                 'auth',
                 'auth:sanctum',
                 'verified',
-                'Laravel\Jetstream\Http\Middleware\AuthenticateSession'
+                'Laravel\Jetstream\Http\Middleware\AuthenticateSession',
             ]);
         }
 
@@ -135,9 +133,9 @@ class ActionMeta
 
             if ($name->endsWith('Store')) {
                 $method = 'post';
-            } else if ($name->endsWith('Update')) {
+            } elseif ($name->endsWith('Update')) {
                 $method = 'put';
-            } else if ($name->endsWith(['Destroy', 'Remove'])) {
+            } elseif ($name->endsWith(['Destroy', 'Remove'])) {
                 $method = 'delete';
             }
         }

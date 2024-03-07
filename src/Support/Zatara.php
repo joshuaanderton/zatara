@@ -28,10 +28,6 @@ class Zatara
         return $this->actions;
     }
 
-    /**
-     * @param string $classname
-     * @return array
-     */
     public function buildAction(string $classname): array
     {
         $actionMeta = new ActionMeta($classname);
@@ -39,7 +35,7 @@ class Zatara
         return [
             'uri' => $actionMeta->uri,
             'methods' => [
-                $actionMeta->method
+                $actionMeta->method,
             ],
             'action' => [
                 'uses' => [$classname, '__invoke'],
@@ -49,7 +45,7 @@ class Zatara
                 // 'namespace' => null
                 // 'prefix' => '',
                 // 'where' => []
-            ]
+            ],
         ];
     }
 

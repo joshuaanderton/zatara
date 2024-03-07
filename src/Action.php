@@ -3,7 +3,6 @@
 namespace Zatara;
 
 use Illuminate\Http\Request as HttpRequest;
-use Zatara\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 
@@ -13,8 +12,6 @@ abstract class Action
 
     /**
      * Handle the incoming request. Return array of data for the current client state or a redirect response to a new state.
-     * @param \Zatara\Request $request
-     * @return array
      */
     abstract public function handle(Request $request): array;
 

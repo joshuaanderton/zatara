@@ -25,7 +25,7 @@ it('Actions with auth middleware run without error and return view or redirect',
     $actions = Zatara::actions()->filter(fn ($action) => in_array('auth', $action['action']['middleware']));
     $this->actingAs($user = User::factory()->withPersonalTeam()->create());
 
-    $actions->each(function ($action) use ($user) {
+    $actions->each(function ($action) {
         $method = $action['methods'][0];
         $parameters = [];
 

@@ -2,12 +2,12 @@
 
 namespace Zatara;
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\File;
-use Zatara\Support\Zatara;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 use Zatara\Support\Facades\Zatara as ZataraFacade;
+use Zatara\Support\Zatara;
 
 class ServiceProvider extends BaseServiceProvider
 {
@@ -34,8 +34,9 @@ class ServiceProvider extends BaseServiceProvider
         collect(File::files(app_path('Models')))
             ->map(function ($file) {
                 $name = str($file->getRelativePathname())->remove('.php');
+
                 return [
-                    $name->prepend("App\\Models\\")->toString() => $name->snake()->toString()
+                    $name->prepend('App\\Models\\')->toString() => $name->snake()->toString(),
                 ];
             })
             ->collapse()
