@@ -23,7 +23,7 @@ abstract class Action
         Gate::allowIf($this->authorize($request));
 
         // Validate request data
-        Validator::make($request->all(), $this->validate($request))->validate();
+        Validator::make($request->all(), $this->rules($request))->validate();
 
         // Pass request to action handler
         $data = $this->handle($request);
@@ -47,7 +47,7 @@ abstract class Action
         return true;
     }
 
-    public function validate(Request $request): array
+    public function rules(Request $request): array
     {
         return [];
     }
