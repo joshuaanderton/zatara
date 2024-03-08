@@ -18,9 +18,14 @@ class Zatara
         $this->actions = $this->buildActions();
     }
 
-    public static function actionNamespace(): string
+    public static function actionNamespace(?string ...$namespace): string
     {
-        return 'App\\Zatara\\';
+        return (
+            collect(['App', 'Zatara'])
+                ->concat(collect($namespace))
+                ->push('')
+                ->join('\\')
+        );
     }
 
     public function actions()

@@ -3,23 +3,12 @@
 namespace Zatara\Support;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Stringable;
 use ReflectionProperty;
 
 class ActionMeta
 {
-    const CRUD_ACTIONS = [
-        'index' => 'get',
-        'show' => 'get',
-        'edit' => 'get',
-        'create' => 'get',
-        'store' => 'post',
-        'update' => 'put',
-        'destroy' => 'delete',
-    ];
-
     public string $actionClassname;
-
-    protected string $actionNamespace;
 
     protected Collection $parseClassname;
 
@@ -36,8 +25,7 @@ class ActionMeta
     public function __construct(string $actionClassname)
     {
         $this->actionClassname = $actionClassname;
-        $this->actionNamespace = Zatara::actionNamespace();
-        $this->parseClassname = str($this->actionClassname)->remove($this->actionNamespace)->explode('\\');
+        $this->parseClassname = str($this->actionClassname)->remove(Zatara::actionNamespace())->explode('\\');
         $this->uri = $this->getUri();
         $this->method = $this->getMethod();
         $this->middleware = $this->getMiddleware();
@@ -45,9 +33,9 @@ class ActionMeta
         $this->view = $this->getView();
     }
 
-    private function getRouteAction(): string
+    private function actionName(): Stringable
     {
-        return str(class_basename($this->actionClassname))->lower()->toString();
+        return str(class_basename($this->actionClassname))->snake('-');
     }
 
     private function getUri(): string
@@ -58,21 +46,19 @@ class ActionMeta
             return $uri;
         }
 
-        if ($this->actionClassname === 'App\\Zatara\\Welcome') {
-            return '/';
-        }
-
         $uri = $this->parseClassname->map(fn ($str) => str($str)->snake('-')->toString())->join('/');
-        $action = $this->getRouteAction();
+        $action = $this->actionName()->toString();
 
-        if (in_array($action, ['index', 'store', 'destroy', 'update'])) {
-            $uri = str($uri)->beforeLast("/{$action}");
+        if (
+            $this->actionClassname === 'App\\Zatara\\Welcome' ||
+            in_array($action, ['index', 'store', 'destroy', 'update'])
+        ) {
+            $uri = str($uri)->beforeLast("{$action}")->rtrim('/');
         }
 
         $modelKey = null;
-        $crudLookupActions = ['show', 'update', 'edit', 'destroy'];
 
-        if (in_array($action, $crudLookupActions)) {
+        if (in_array($action, ['show', 'update', 'edit', 'destroy'])) {
             $modelKey = (
                 str(
                     $this->parseClassname
@@ -85,9 +71,7 @@ class ActionMeta
                     ->toString()
             );
 
-            if (! str($uri)->contains('/'.'{'.$modelKey.'}')) {
-                $uri = str($uri)->append('/'.'{'.$modelKey.'}')->toString();
-            }
+            $uri = str($uri)->append("/{{$modelKey}}")->toString();
         }
 
         return $uri;
@@ -106,7 +90,7 @@ class ActionMeta
         $middleware = collect('web');
 
         if (
-            str($this->actionClassname)->startsWith($this->actionNamespace.'Dashboard')
+            str($this->actionClassname)->startsWith(Zatara::actionNamespace('Dashboard'))
         ) {
             $middleware = $middleware->merge([
                 'auth',
@@ -126,27 +110,17 @@ class ActionMeta
 
     private function getMethod(): string
     {
-        $method = $this->getMethodForActionName();
+        $name = $this->actionName();
 
-        if ($method === null) {
-            $name = str($this->actionClassname);
-
-            if ($name->endsWith('Store')) {
-                $method = 'post';
-            } elseif ($name->endsWith('Update')) {
-                $method = 'put';
-            } elseif ($name->endsWith(['Destroy', 'Remove'])) {
-                $method = 'delete';
-            }
-        }
-
-        return $method ?: 'get';
-    }
-
-    public function getMethodForActionName()
-    {
-        $name = $this->getRouteAction();
-
-        return self::CRUD_ACTIONS[$name] ?? null;
+        return match($name->toString()) {
+            'index' => 'get',
+            'show' => 'get',
+            'edit' => 'get',
+            'create' => 'get',
+            'store' => 'post',
+            'update' => 'put',
+            'destroy' => 'delete',
+            default => 'get',
+        };
     }
 }

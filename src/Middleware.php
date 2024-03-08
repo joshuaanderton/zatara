@@ -8,4 +8,14 @@ abstract class Middleware
     {
         return $response;
     }
+
+    protected function inertiaView(Request $request): string
+    {
+        return (
+            str($request->route()->getAction('controller'))
+                ->before('@')
+                ->remove('App\\Zatara\\')
+                ->replace('\\', '/')
+        );
+    }
 }
