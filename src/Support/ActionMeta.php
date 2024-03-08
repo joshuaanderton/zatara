@@ -4,7 +4,6 @@ namespace Zatara\Support;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Stringable;
-use ReflectionProperty;
 
 class ActionMeta
 {
@@ -40,12 +39,6 @@ class ActionMeta
 
     private function getUri(): string
     {
-        $prop = new ReflectionProperty($this->actionClassname, 'uri');
-
-        if ($uri = $prop->getDefaultValue() ?? null) {
-            return $uri;
-        }
-
         $uri = $this->parseClassname->map(fn ($str) => str($str)->snake('-')->toString())->join('/');
         $action = $this->actionName()->toString();
 
