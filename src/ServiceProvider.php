@@ -3,7 +3,7 @@
 namespace Zatara;
 
 use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Support\Facades\File;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 use Zatara\Support\Facades\Zatara as ZataraFacade;
@@ -14,38 +14,31 @@ class ServiceProvider extends BaseServiceProvider
     public function register()
     {
         $this->app->singleton('zatara', fn (Application $app) => new Zatara($app));
-
-        Route::middleware('web')->group(function () {
-            ZataraFacade::actions()->each(fn (array $action) => (
-                Route::match(
-                    $action['methods'],
-                    $action['uri'],
-                    $action['action']['uses']
-                )
-                    ->name($action['action']['as'])
-                    ->middleware($action['action']['middleware'])
-            ));
-        });
     }
 
     public function boot()
     {
-        // Define explicit model bindings
-        collect(File::files(app_path('Models')))
-            ->map(function ($file) {
-                $name = str($file->getRelativePathname())->remove('.php');
+        $actions = ZataraFacade::actions();
 
-                return [
-                    $name->prepend('App\\Models\\')->toString() => $name->snake()->toString(),
-                ];
-            })
+        $actions->each(fn (array $action) => (
+            Route::match(
+                $action['methods'],
+                $action['uri'],
+                $action['action']['uses']
+            )
+                ->name($action['action']['as'])
+                ->middleware($action['action']['middleware'])
+        ));
+
+        // Define explicit model bindings
+        $actions
+            ->pluck('uri')
+            ->map(fn ($str): Collection => str($str)->matchAll('/\{([a-z_]+)\}/'))
+            ->flatten()
+            ->unique()
+            ->map(fn ($param) => ['\\App\\Models\\'.str($param)->studly()->toString() => $param])
             ->collapse()
-            ->filter(fn ($param) => (
-                ZataraFacade::actions()
-                    ->pluck('uri')
-                    ->filter(fn ($str) => str($str)->contains("{{$param}}"))
-                    ->count() > 0
-            ))
+            ->filter(fn ($param, $model) => class_exists($model))
             ->each(fn ($param, $model) => Route::model($param, $model));
     }
 }
