@@ -32,6 +32,10 @@ abstract class Action
 
     public function response(Request $request, Response $response): mixed
     {
+        if ($request->routeIs('api.*')) {
+            return $response;
+        }
+
         $middleware = 'App\\Http\\Middleware\\HandleZataraRequests';
         $middleware = class_exists($middleware) ? $middleware : Middleware::class;
 

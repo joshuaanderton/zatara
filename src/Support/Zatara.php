@@ -18,7 +18,7 @@ class Zatara
         $this->actions = $this->buildActions();
     }
 
-    public static function actionNamespace(?string ...$namespace): string
+    public static function getNamespace(?string ...$namespace): string
     {
         return (
             collect(['App', 'Zatara'])
@@ -28,35 +28,14 @@ class Zatara
         );
     }
 
-    public function actions()
+    public function getActions()
     {
         return $this->actions;
     }
 
-    public function buildAction(string $classname): array
-    {
-        $actionMeta = new ActionMeta($classname);
-
-        return [
-            'uri' => $actionMeta->uri,
-            'methods' => [
-                $actionMeta->method,
-            ],
-            'action' => [
-                'uses' => [$classname, '__invoke'],
-                'controller' => $classname,
-                'middleware' => $actionMeta->middleware,
-                'as' => $actionMeta->as,
-                // 'namespace' => null
-                // 'prefix' => '',
-                // 'where' => []
-            ],
-        ];
-    }
-
     public function buildActions(): Collection
     {
-        $actionNamespace = str($this->actionNamespace());
+        $actionNamespace = str($this->getNamespace());
         $classFiles = File::allFiles(
             base_path(
                 $actionNamespace
@@ -65,16 +44,32 @@ class Zatara
             )
         );
 
-        return collect($classFiles)->map(fn ($file) => $this->buildAction(
-            $actionNamespace
-                ->append(
-                    str($file->getRelativePathname())
-                        ->remove('.php')
-                        ->explode('/')
-                        ->map(fn ($str) => str($str)->studly()->toString())
-                        ->join('\\')
-                )
-                ->toString()
-        ));
+        return collect($classFiles)->map(function ($file) use ($actionNamespace) {
+            $classname = (
+                $actionNamespace
+                    ->append(
+                        str($file->getRelativePathname())
+                            ->remove('.php')
+                            ->explode('/')
+                            ->map(fn ($str) => str($str)->studly()->toString())
+                            ->join('\\')
+                    )
+                    ->toString()
+            );
+
+            $actionMeta = new ActionMeta($classname);
+
+            return [
+                'uri' => $actionMeta->uri,
+                'methods' => $actionMeta->methods,
+                'action' => [
+                    'uses' => [$classname, '__invoke'],
+                    'controller' => $classname,
+                    'middleware' => $actionMeta->middleware,
+                    'as' => $actionMeta->as
+                ],
+            ];
+
+        });
     }
 }

@@ -16,7 +16,7 @@ class ServiceProvider extends BaseServiceProvider
         $this->app->singleton('zatara', fn (Application $app) => new Zatara($app));
 
         Route::middleware('web')->group(function () {
-            ZataraFacade::actions()->each(fn (array $action) => (
+            ZataraFacade::getActions()->each(fn (array $action) => (
                 Route::match(
                     $action['methods'],
                     $action['uri'],
@@ -41,7 +41,7 @@ class ServiceProvider extends BaseServiceProvider
             })
             ->collapse()
             ->filter(fn ($param) => (
-                ZataraFacade::actions()
+                ZataraFacade::getActions()
                     ->pluck('uri')
                     ->filter(fn ($str) => str($str)->contains("{{$param}}"))
                     ->count() > 0

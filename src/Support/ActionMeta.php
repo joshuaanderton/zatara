@@ -13,7 +13,7 @@ class ActionMeta
 
     public string $uri;
 
-    public string $method;
+    public array $methods;
 
     public array $middleware;
 
@@ -24,15 +24,15 @@ class ActionMeta
     public function __construct(string $actionClassname)
     {
         $this->actionClassname = $actionClassname;
-        $this->parseClassname = str($this->actionClassname)->remove(Zatara::actionNamespace())->explode('\\');
+        $this->parseClassname = str($this->actionClassname)->remove(Zatara::getNamespace())->explode('\\');
         $this->uri = $this->getUri();
-        $this->method = $this->getMethod();
+        $this->methods = $this->getMethods();
         $this->middleware = $this->getMiddleware();
         $this->as = $this->getAs();
         $this->view = $this->getView();
     }
 
-    private function actionName(): Stringable
+    private function getName(): Stringable
     {
         return str(class_basename($this->actionClassname))->snake('-');
     }
@@ -40,7 +40,7 @@ class ActionMeta
     private function getUri(): string
     {
         $uri = $this->parseClassname->map(fn ($str) => str($str)->snake('-')->toString())->join('/');
-        $action = $this->actionName()->toString();
+        $action = $this->getName()->toString();
 
         if (
             $this->actionClassname === 'App\\Zatara\\Welcome' ||
@@ -83,7 +83,7 @@ class ActionMeta
         $middleware = collect('web');
 
         if (
-            str($this->actionClassname)->startsWith(Zatara::actionNamespace('Dashboard'))
+            str($this->actionClassname)->startsWith(Zatara::getNamespace('Dashboard'))
         ) {
             $middleware = $middleware->merge([
                 'auth',
@@ -101,11 +101,9 @@ class ActionMeta
         return $this->parseClassname->map(fn ($str) => str($str)->studly()->toString())->join('/');
     }
 
-    private function getMethod(): string
+    private function getMethods(): array
     {
-        $name = $this->actionName();
-
-        return match($name->toString()) {
+        $method = match($this->getName()->toString()) {
             'index' => 'get',
             'show' => 'get',
             'edit' => 'get',
@@ -115,5 +113,7 @@ class ActionMeta
             'destroy' => 'delete',
             default => 'get',
         };
+
+        return [$method];
     }
 }

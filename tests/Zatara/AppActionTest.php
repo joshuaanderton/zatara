@@ -8,7 +8,7 @@ use Zatara\Support\Facades\Zatara;
 uses(TestCase::class, RefreshDatabase::class)->in(__DIR__);
 
 it('Actions without auth middleware run without error and return view or redirect', function () {
-    $actions = Zatara::actions()->filter(fn ($action) => ! in_array('auth', $action['action']['middleware']));
+    $actions = Zatara::getActions()->filter(fn ($action) => ! in_array('auth', $action['action']['middleware']));
     $actions->each(function ($action) {
         $method = $action['methods'][0];
         $parameters = [];
@@ -22,7 +22,7 @@ it('Actions without auth middleware run without error and return view or redirec
 });
 
 it('Actions with auth middleware run without error and return view or redirect', function () {
-    $actions = Zatara::actions()->filter(fn ($action) => in_array('auth', $action['action']['middleware']));
+    $actions = Zatara::getActions()->filter(fn ($action) => in_array('auth', $action['action']['middleware']));
     $this->actingAs($user = User::factory()->withPersonalTeam()->create());
 
     $actions->each(function ($action) {

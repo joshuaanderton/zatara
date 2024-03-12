@@ -18,7 +18,7 @@ class ServiceProvider extends BaseServiceProvider
 
     public function boot()
     {
-        $actions = ZataraFacade::actions();
+        $actions = ZataraFacade::getActions();
 
         $actions->each(fn (array $action) => (
             Route::match(
