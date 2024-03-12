@@ -19,7 +19,7 @@ abstract class Action
     protected ?User $user;
     protected ?Team $team;
 
-    final public function __invoke(HttpRequest $request): mixed
+    public function __invoke(HttpRequest $request): mixed
     {
         return (
             $this
@@ -47,7 +47,7 @@ abstract class Action
         return [];
     }
 
-    final private function getResponse(): mixed
+    private function getResponse(): mixed
     {
         return $this->response(
             request: $this->request,
@@ -63,7 +63,7 @@ abstract class Action
         return true;
     }
 
-    final private function setRequest(HttpRequest $request): self
+    private function setRequest(HttpRequest $request): self
     {
         $this->request = Request::createFrom($request);
         $this->user = $this->request->user();
@@ -72,7 +72,7 @@ abstract class Action
         return $this;
     }
 
-    final private function authorizeCondition(): self
+    private function authorizeCondition(): self
     {
         Gate::allowIf(
             condition: $this->condition($this->request)
@@ -86,7 +86,7 @@ abstract class Action
         return [];
     }
 
-    final private function validateRules(): self
+    private function validateRules(): self
     {
         $validator = Validator::make(
             data: $this->request->all(),

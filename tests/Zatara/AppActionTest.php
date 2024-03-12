@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Tests\TestCase;
 use Zatara\Support\Facades\Zatara;
 
@@ -17,7 +18,7 @@ it('Actions without auth middleware run without error and return view or redirec
             route($action['action']['as'], $parameters)
         );
 
-        $response->assertStatus(200);
+        expect(in_array($response->status(), [302, 200]))->toBe(true);
     });
 });
 
@@ -33,6 +34,6 @@ it('Actions with auth middleware run without error and return view or redirect',
             route($action['action']['as'], $parameters)
         );
 
-        $response->assertStatus(200);
+        expect(in_array($response->status(), [302, 200]))->toBe(true);
     });
 });
