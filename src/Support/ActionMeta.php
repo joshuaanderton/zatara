@@ -41,14 +41,6 @@ class ActionMeta
     {
         $uri = $this->parseClassname->map(fn ($str) => str($str)->snake('-')->toString())->join('/');
         $action = $this->getName()->toString();
-
-        if (
-            $this->actionClassname === 'App\\Zatara\\Welcome' ||
-            in_array($action, ['index', 'store', 'destroy', 'update'])
-        ) {
-            $uri = str($uri)->beforeLast("{$action}")->rtrim('/');
-        }
-
         $modelKey = null;
 
         if (in_array($action, ['show', 'update', 'edit', 'destroy'])) {
@@ -64,7 +56,14 @@ class ActionMeta
                     ->toString()
             );
 
-            $uri = str($uri)->append("/{{$modelKey}}")->toString();
+            $uri = str($uri)->replaceLast("/{$action}", "/{{$modelKey}}/{$action}")->toString();
+        }
+
+        if (
+            $this->actionClassname === 'App\\Zatara\\Welcome' ||
+            in_array($action, ['index', 'store', 'destroy', 'update'])
+        ) {
+            $uri = str($uri)->beforeLast("{$action}")->rtrim('/');
         }
 
         return $uri;
