@@ -31,8 +31,6 @@ class ServiceProvider extends BaseServiceProvider
                 ->middleware($action['action']['middleware'])
         ));
 
-        Route::middleware(['web'])->match(['get', 'post', 'delete'], 'zatara/{action}', ClientConnect::class)->name('zatara.connection');
-
         // Define explicit model bindings
         $actions
             ->pluck('uri')
@@ -42,6 +40,16 @@ class ServiceProvider extends BaseServiceProvider
             ->map(fn ($param) => ['\\App\\Models\\'.str($param)->studly()->toString() => $param])
             ->collapse()
             ->filter(fn ($param, $model) => class_exists($model))
-            ->each(fn ($param, $model) => Route::model($param, $model));
+            ->each(fn ($param, $model) => (
+                Route::bind($param, fn (string $value) => (
+                    str(request()->route()->getAction('controller'))->startsWith(Zatara::getNamespace())
+                        ? $model::where((new $model)->getRouteKeyName(), $value)->firstOrFail()
+                        : $value
+                ))
+            ));
+
+        Route::middleware(['web'])
+            ->match(['get', 'post', 'delete'], 'zatara/{action}', ClientConnect::class)
+            ->name('zatara.connection');
     }
 }
