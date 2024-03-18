@@ -4,22 +4,24 @@ namespace Zatara;
 
 use App\Models\Team;
 use App\Models\User;
-use Illuminate\Http\Request as HttpRequest;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
+use Inertia\Response as InertiaResponse;
 
 abstract class Action
 {
     /**
      * Handle the incoming request. Return array of data for the current client state or a redirect response to a new state.
      */
-    abstract public function handle(Request $request): array;
+    abstract public function handle(Request $request): array|RedirectResponse|InertiaResponse;
 
     protected Request $request;
     protected ?User $user;
     protected ?Team $team;
 
-    public function __invoke(HttpRequest $request): mixed
+    public function __invoke(Request $request): mixed
     {
         return (
             $this
@@ -30,31 +32,39 @@ abstract class Action
         );
     }
 
-    public function response(Request $request, Response $response): mixed
-    {
-        if ($request->routeIs('api.*')) {
-            return $response;
-        }
-
-        $middleware = 'App\\Http\\Middleware\\HandleZataraRequests';
-        $middleware = class_exists($middleware) ? $middleware : Middleware::class;
-
-        return (new $middleware)->response($request, $response);
-    }
-
-    public function headers(Request $request): array
-    {
-        return [];
-    }
-
     private function getResponse(): mixed
     {
-        return $this->response(
-            request: $this->request,
-            response: new Response(
-                data: $this->handle($this->request),
-                headers: $this->headers($this->request)
-            )
+        $request = $this->request;
+        $responseData = $this->handle($request);
+
+        if ($request->wantsJson()) {
+            return response()->json($responseData);
+        }
+
+        if (
+            $responseData instanceof RedirectResponse ||
+            $responseData instanceof InertiaResponse ||
+            ! class_exists(\Inertia\Inertia::class)
+        ) {
+            return $responseData;
+        }
+
+        $page = $this->inertiaView($request);
+
+        if (class_exists(\Laravel\Jetstream\Jetstream::class)) {
+            return \Laravel\Jetstream\Jetstream::inertia()->render(request(), $page, $responseData);
+        }
+
+        return \Inertia\Inertia::render($page, $responseData);
+    }
+
+    protected function inertiaView(Request $request): string
+    {
+        return (
+            str($request->route()->getAction('controller'))
+                ->before('@')
+                ->remove('App\\Zatara\\')
+                ->replace('\\', '/')
         );
     }
 
@@ -63,7 +73,7 @@ abstract class Action
         return true;
     }
 
-    private function setRequest(HttpRequest $request): self
+    private function setRequest(Request $request): self
     {
         $this->request = Request::createFrom($request);
         $this->user = $this->request->user();
