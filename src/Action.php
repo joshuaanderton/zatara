@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Response as InertiaResponse;
+use Zatara\Support\Zatara;
 
 abstract class Action
 {
@@ -18,18 +19,19 @@ abstract class Action
     abstract public function handle(Request $request): array|RedirectResponse|InertiaResponse;
 
     protected Request $request;
+
     protected ?User $user;
+
     protected ?Team $team;
 
     public function __invoke(Request $request): mixed
     {
-        return (
+        return
             $this
                 ->setRequest($request)
                 ->authorizeCondition()
                 ->validateRules()
-                ->getResponse()
-        );
+                ->getResponse();
     }
 
     private function getResponse(): mixed
@@ -60,12 +62,11 @@ abstract class Action
 
     protected function inertiaView(Request $request): string
     {
-        return (
+        return
             str($request->route()->getAction('controller'))
                 ->before('@')
-                ->remove('App\\Zatara\\')
-                ->replace('\\', '/')
-        );
+                ->remove(Zatara::actionNamespace())
+                ->replace('\\', '/');
     }
 
     public function condition(Request $request): bool

@@ -13,7 +13,7 @@ class User
     public function handle(Request $request)
     {
         return response()->json([
-            'check' => !!($user = $request->user()),
+            'check' => (bool) ($user = $request->user()),
             'user' => $user,
             'team' => $team = $user?->currentTeam,
             'permissions' => ! $team ? [] : [
@@ -22,7 +22,7 @@ class User
                 'canRemoveTeamMembers' => Gate::check('removeTeamMember', $team),
                 'canUpdateTeam' => Gate::check('update', $team),
                 'canUpdateTeamMembers' => Gate::check('updateTeamMember', $team),
-            ]
+            ],
         ], 200);
     }
 }

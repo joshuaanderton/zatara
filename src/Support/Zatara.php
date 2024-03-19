@@ -5,6 +5,7 @@ namespace Zatara\Support;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
+use Zatara\Objects\Action;
 
 class Zatara
 {
@@ -18,14 +19,13 @@ class Zatara
         $this->actions = $this->buildActions();
     }
 
-    public static function getNamespace(?string ...$namespace): string
+    public static function actionNamespace(?string ...$namespace): string
     {
-        return (
+        return
             collect(['App', 'Zatara'])
                 ->concat(collect($namespace))
                 ->push('')
-                ->join('\\')
-        );
+                ->join('\\');
     }
 
     public function getActions()
@@ -35,7 +35,7 @@ class Zatara
 
     public function buildActions(): Collection
     {
-        $actionNamespace = str($this->getNamespace());
+        $actionNamespace = str($this->actionNamespace());
         $classFiles = File::allFiles(
             base_path(
                 $actionNamespace
@@ -57,7 +57,7 @@ class Zatara
                     ->toString()
             );
 
-            $actionMeta = new ActionMeta($classname);
+            $actionMeta = new Action($classname);
 
             return [
                 'uri' => $actionMeta->uri,
@@ -66,7 +66,7 @@ class Zatara
                     'uses' => [$classname, '__invoke'],
                     'controller' => $classname,
                     'middleware' => $actionMeta->middleware,
-                    'as' => $actionMeta->as
+                    'as' => $actionMeta->as,
                 ],
             ];
 

@@ -42,7 +42,7 @@ class ServiceProvider extends BaseServiceProvider
             ->filter(fn ($param, $model) => class_exists($model))
             ->each(fn ($param, $model) => (
                 Route::bind($param, fn (string $value) => (
-                    str(request()->route()->getAction('controller'))->startsWith(Zatara::getNamespace())
+                    str(request()->route()->getAction('controller'))->startsWith(Zatara::actionNamespace())
                         ? $model::where((new $model)->getRouteKeyName(), $value)->firstOrFail()
                         : $value
                 ))

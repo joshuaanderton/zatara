@@ -24,12 +24,12 @@ class Login
 
         if (! Auth::attempt($request->only('email', 'password'))) {
             return response()->json([
-                'message' => 'Invalid credentials'
+                'message' => 'Invalid credentials',
             ], 401);
         }
 
         return response()->json([
-            'check' => !!($user = $request->user()),
+            'check' => (bool) ($user = $request->user()),
             'user' => $user,
             'team' => $team = $user?->currentTeam,
             'permissions' => ! $team ? [] : [
@@ -38,7 +38,7 @@ class Login
                 'canRemoveTeamMembers' => Gate::check('removeTeamMember', $team),
                 'canUpdateTeam' => Gate::check('update', $team),
                 'canUpdateTeamMembers' => Gate::check('updateTeamMember', $team),
-            ]
+            ],
         ], 200);
     }
 }

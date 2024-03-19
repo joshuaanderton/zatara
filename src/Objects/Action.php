@@ -1,11 +1,12 @@
 <?php
 
-namespace Zatara\Support;
+namespace Zatara\Objects;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Stringable;
+use Zatara\Support\Zatara;
 
-class ActionMeta
+class Action
 {
     public string $actionClassname;
 
@@ -24,7 +25,7 @@ class ActionMeta
     public function __construct(string $actionClassname)
     {
         $this->actionClassname = $actionClassname;
-        $this->parseClassname = str($this->actionClassname)->remove(Zatara::getNamespace())->explode('\\');
+        $this->parseClassname = str($this->actionClassname)->remove(Zatara::actionNamespace())->explode('\\');
         $this->uri = $this->getUri();
         $this->methods = $this->getMethods();
         $this->middleware = $this->getMiddleware();
@@ -60,7 +61,7 @@ class ActionMeta
         }
 
         if (
-            $this->actionClassname === 'App\\Zatara\\Welcome' ||
+            $this->actionClassname === Zatara::actionNamespace().'Welcome' ||
             in_array($action, ['index', 'store', 'destroy', 'update'])
         ) {
             $uri = str($uri)->beforeLast("{$action}")->rtrim('/');
@@ -82,7 +83,7 @@ class ActionMeta
         $middleware = collect('web');
 
         if (
-            str($this->actionClassname)->startsWith(Zatara::getNamespace('Dashboard'))
+            str($this->actionClassname)->startsWith(Zatara::actionNamespace('Dashboard'))
         ) {
             $middleware = $middleware->merge([
                 'auth',
@@ -102,7 +103,7 @@ class ActionMeta
 
     private function getMethods(): array
     {
-        $method = match($this->getName()->toString()) {
+        $method = match ($this->getName()->toString()) {
             'index' => 'get',
             'show' => 'get',
             'edit' => 'get',
