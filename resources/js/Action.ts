@@ -10,8 +10,10 @@ export default class {
 
   public route: ActionRoute|undefined
 
-  constructor() {
-    //
+  public params: {[key: string]: any}
+
+  constructor(params: {[key: string]: any}) {
+    this.params = params
   }
 
   run(params: {[key: string]: any} = {}) {
