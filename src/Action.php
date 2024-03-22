@@ -51,19 +51,24 @@ abstract class Action
             return $responseData;
         }
 
-        $page = $this->inertiaView($request);
-
-        if (class_exists(\Laravel\Jetstream\Jetstream::class)) {
-            return \Laravel\Jetstream\Jetstream::inertia()->render(request(), $page, $responseData);
-        }
-
-        return \Inertia\Inertia::render($page, $responseData);
+        return $this->render(null, $responseData);
     }
 
-    protected function inertiaView(Request $request): string
+    public function render(string|null $component = null, array $data): InertiaResponse
+    {
+        $component = $component ?: $this->inertiaView();
+
+        if (class_exists(\Laravel\Jetstream\Jetstream::class)) {
+            return \Laravel\Jetstream\Jetstream::inertia()->render($this->request, $component, $data);
+        }
+
+        return \Inertia\Inertia::render($component, $data);
+    }
+
+    protected function inertiaView(): string
     {
         return
-            str($request->route()->getAction('controller'))
+            str($this->request->route()->getAction('controller'))
                 ->before('@')
                 ->remove(Zatara::actionNamespace())
                 ->replace('\\', '/');
