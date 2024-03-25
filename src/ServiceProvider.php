@@ -3,7 +3,9 @@
 namespace Zatara;
 
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 use Zatara\Actions\ClientConnect;
@@ -37,9 +39,9 @@ class ServiceProvider extends BaseServiceProvider
             ->map(fn ($str): Collection => str($str)->matchAll('/\{([a-z_]+)\}/'))
             ->flatten()
             ->unique()
-            ->map(fn ($param) => ['\\App\\Models\\'.str($param)->studly()->toString() => $param])
+            ->map(fn ($param) => [str($param)->studly()->prepend('App\\Models\\')->toString() => $param])
             ->collapse()
-            ->filter(fn ($param, $model) => class_exists($model))
+            ->filter(fn ($_, $model) => class_exists($model))
             ->each(fn ($param, $model) => (
                 Route::bind($param, fn (string $value) => (
                     str(request()->route()->getAction('controller'))->startsWith(Zatara::actionNamespace())
