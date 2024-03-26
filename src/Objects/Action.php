@@ -40,7 +40,10 @@ class Action
 
     private function getUri(): string
     {
-        $uri = $this->parseClassname->map(fn ($str) => str($str)->snake('-')->toString())->join('/');
+        $uri = $this->parseClassname
+            ->map(fn ($str) => str($str)->snake('-')->toString())
+            ->join('/');
+
         $action = $this->getName()->toString();
         $modelKey = null;
 
@@ -92,6 +95,15 @@ class Action
                 'Laravel\Jetstream\Http\Middleware\AuthenticateSession',
             ]);
         }
+
+        // if (
+        //     str($this->actionClassname)->startsWith(Zatara::actionNamespace('Api'))
+        // ) {
+        //     $middleware = $middleware->merge([
+        //         'api',
+        //         'auth:sanctum',
+        //     ]);
+        // }
 
         return $middleware->toArray();
     }

@@ -39,7 +39,7 @@ abstract class Action
         $request = $this->request;
         $responseData = $this->handle($request);
 
-        if ($request->wantsJson()) {
+        if ($request->wantsJson() || str($this->actionClassname())->startsWith(Zatara::actionNamespace('Api'))) {
             return response()->json($responseData);
         }
 
@@ -63,6 +63,11 @@ abstract class Action
         }
 
         return \Inertia\Inertia::render($component, $data);
+    }
+
+    protected function actionClassname(): string
+    {
+        return str($this->request->route()->getAction('controller'))->before('@');
     }
 
     protected function inertiaView(): string
