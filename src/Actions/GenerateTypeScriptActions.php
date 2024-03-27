@@ -31,7 +31,7 @@ class GenerateTypeScriptActions
                 ->map(fn ($action) => json_decode(json_encode($action)))
                 ->map(fn (object $action) => ("
 actionMetas.push({
-  namespace: '".str($action->action->controller)->after(Zatara::actionNamespace())->replace('\\', '.')->toString()."',
+  namespace: '".str($action->action->controller)->after(Zatara::namespace())->replace('\\', '.')->toString()."',
   class: class extends Action {
     public route: ActionRoute = {
       uri: '{$action->uri}',

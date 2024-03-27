@@ -9,7 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Response as InertiaResponse;
-use Zatara\Support\Zatara;
+use Zatara\Objects\Action as ObjectsAction;
+use Zatara\Support\Facades\Zatara;
 
 abstract class Action
 {
@@ -24,8 +25,12 @@ abstract class Action
 
     protected ?Team $team;
 
+    protected ObjectsAction $action;
+
     public function __invoke(Request $request): mixed
     {
+        $this->action = ObjectsAction::fromRequest($request);
+
         return
             $this
                 ->setRequest($request)
@@ -39,7 +44,7 @@ abstract class Action
         $request = $this->request;
         $responseData = $this->handle($request);
 
-        if ($request->wantsJson() || str($this->actionClassname())->startsWith(Zatara::actionNamespace('Api'))) {
+        if ($request->wantsJson() || str($this->action->classname)->startsWith('Api\\')) {
             return response()->json($responseData);
         }
 
@@ -56,27 +61,14 @@ abstract class Action
 
     public function render(string|null $component = null, array $data): InertiaResponse
     {
-        $component = $component ?: $this->inertiaView();
+        $component = $component ?: $this->action->inertiaComponent;
+
 
         if (class_exists(\Laravel\Jetstream\Jetstream::class)) {
             return \Laravel\Jetstream\Jetstream::inertia()->render($this->request, $component, $data);
         }
 
         return \Inertia\Inertia::render($component, $data);
-    }
-
-    protected function actionClassname(): string
-    {
-        return str($this->request->route()->getAction('controller'))->before('@');
-    }
-
-    protected function inertiaView(): string
-    {
-        return
-            str($this->request->route()->getAction('controller'))
-                ->before('@')
-                ->remove(Zatara::actionNamespace())
-                ->replace('\\', '/');
     }
 
     public function condition(Request $request): bool

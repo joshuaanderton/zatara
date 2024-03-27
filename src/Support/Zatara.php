@@ -5,6 +5,7 @@ namespace Zatara\Support;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
+use ReflectionProperty;
 use Zatara\Objects\Action;
 
 class Zatara
@@ -13,63 +14,37 @@ class Zatara
 
     public Collection $actions;
 
-    public function __construct(Application $app)
+    public function __construct()
     {
-        $this->app = $app;
-        $this->actions = $this->buildActions();
+        //
     }
 
-    public static function actionNamespace(?string ...$namespace): string
+    public function namespace(?string ...$namespaces): string
     {
-        return
-            collect(['App', 'Zatara'])
-                ->concat(collect($namespace))
-                ->push('')
-                ->join('\\');
-    }
+        $namespace = str('App\\Zatara');
 
-    public function getActions()
-    {
-        return $this->actions;
-    }
-
-    public function buildActions(): Collection
-    {
-        $actionNamespace = str($this->actionNamespace());
-        $classFiles = File::allFiles(
-            base_path(
-                $actionNamespace
-                    ->replace('\\', '/')
-                    ->replace('App', 'app')
+        return $namespace
+            ->explode('\\')
+            ->concat(
+                collect($namespaces)
+                    ->map(fn ($n) => rtrim($n, '.php'))
             )
+            ->join('\\');
+    }
+
+    public function getActions(): Collection
+    {
+        if ((new ReflectionProperty($this, 'actions'))->isInitialized($this)) {
+            return $this->actions;
+        }
+
+        $namespace = str($this->namespace())->remove('App\\');
+        $zataraDir = app_path($namespace->replace('\\', '/'));
+
+        return $this->actions = collect(File::allFiles($zataraDir))->map(fn ($file) =>
+            (new Action(
+                str_replace('/', '\\', rtrim($file->getRelativePathname(), '.php'))
+            ))->toArray()
         );
-
-        return collect($classFiles)->map(function ($file) use ($actionNamespace) {
-            $classname = (
-                $actionNamespace
-                    ->append(
-                        str($file->getRelativePathname())
-                            ->remove('.php')
-                            ->explode('/')
-                            ->map(fn ($str) => str($str)->studly()->toString())
-                            ->join('\\')
-                    )
-                    ->toString()
-            );
-
-            $actionMeta = new Action($classname);
-
-            return [
-                'uri' => $actionMeta->uri,
-                'methods' => $actionMeta->methods,
-                'action' => [
-                    'uses' => [$classname, '__invoke'],
-                    'controller' => $classname,
-                    'middleware' => $actionMeta->middleware,
-                    'as' => $actionMeta->as,
-                ],
-            ];
-
-        });
     }
 }

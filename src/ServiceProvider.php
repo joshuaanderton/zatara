@@ -35,19 +35,11 @@ class ServiceProvider extends BaseServiceProvider
 
         // Define explicit model bindings
         $actions
-            ->pluck('uri')
-            ->map(fn ($str): Collection => str($str)->matchAll('/\{([a-z_]+)\}/'))
-            ->flatten()
+            ->pluck('params')
+            ->flatten(1)
             ->unique()
-            ->map(fn ($param) => [str($param)->studly()->prepend('App\\Models\\')->toString() => $param])
-            ->collapse()
-            ->filter(fn ($_, $model) => class_exists($model))
             ->each(fn ($param, $model) => (
-                Route::bind($param, fn (string $value) => (
-                    str(request()->route()->getAction('controller'))->startsWith(Zatara::actionNamespace())
-                        ? $model::where((new $model)->getRouteKeyName(), $value)->firstOrFail()
-                        : $value
-                ))
+                Route::bind($param, $model)
             ));
 
         Route::middleware(['web'])
