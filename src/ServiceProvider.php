@@ -36,14 +36,16 @@ class ServiceProvider extends BaseServiceProvider
         // Define explicit model bindings
         $actions
             ->pluck('params')
-            ->flatten(1)
+            ->collapse()
             ->unique()
-            ->each(fn ($param, $model) => (
-                Route::bind($param, $model)
+            ->each(fn ($model, $param) => (
+                Route::bind($param, fn ($value) =>
+                    $model::where((new $model)->getRouteKeyName(), $value)->firstOrFail()
+                )
             ));
 
-        Route::middleware(['web'])
-            ->match(['get', 'post', 'delete'], 'zatara/{action}', ClientConnect::class)
-            ->name('zatara.connection');
+        // Route::middleware(['web'])
+        //     ->match(['get', 'post', 'delete'], 'zatara/{action}', ClientConnect::class)
+        //     ->name('zatara.connection');
     }
 }
