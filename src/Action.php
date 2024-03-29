@@ -9,8 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Response as InertiaResponse;
-use Zatara\Objects\Action as ObjectsAction;
-use Zatara\Support\Facades\Zatara;
+use Zatara\Support\ZataraObject;
 
 abstract class Action
 {
@@ -25,11 +24,11 @@ abstract class Action
 
     protected ?Team $team;
 
-    protected ObjectsAction $action;
+    protected ZataraObject $action;
 
     public function __invoke(Request $request): mixed
     {
-        $this->action = ObjectsAction::fromRequest($request);
+        $this->action = ZataraObject::fromRequest($request);
 
         return
             $this

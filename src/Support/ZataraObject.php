@@ -1,13 +1,14 @@
 <?php
 
-namespace Zatara\Objects;
+namespace Zatara\Support;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Stringable;
+use Zatara\Enums\CRUD;
 use Zatara\Support\Zatara;
 
-class Action
+class ZataraObject
 {
     public string $classname;
 
@@ -74,23 +75,33 @@ class Action
 
         // Add '{param}' keys into URI for each model parameter (should use laravel tool for this later)
         // dashboard/shops/products/edit => dashboard/shops/{shop}/products/{product}/edit
-        $params = collect($this->getParams());
-        // Don't want to add params to certain routes (e.g. /products/index or custom /products/blah)
-        $params = $params->filter(fn ($_, $param) => ! (
-            $param === str($params->keys()->last())->singular()->toString() && // at last lookup in URI
-            ! in_array($action, ['edit', 'destroy', 'update', 'show']) // and not the common lookup actions
-        ));
-        foreach ($params as $param => $_) {
+        $params = $this->getParams();
+        $lastParamVal = end($params);
+
+        // Replace /products/edit with /products/{product}/edit (for example)
+        foreach ($params as $paramKey => $paramVal) {
+
+            // TODO: Should account for singleton routes (e.g. /account/edit)
+            // $modelSlug === str($paramKey)->plural()->toString())
+
+            // Don't add params to index, store, create, or non-crud actions
+            if ($paramVal === $lastParamVal && (
+                CRUD::in($action, CRUD::INDEX, CRUD::STORE, CRUD::CREATE) ||
+                ! CRUD::in($action)
+            )) {
+                continue;
+            }
+
             $uri = str($uri)->replaceFirst(
-                str($param)->plural()->toString(),
-                str($param)->plural()->append("/{{$param}}")->toString()
+                str($paramKey)->plural()->toString(),
+                str($paramKey)->plural()->append("/{{$paramKey}}")->toString()
             )->toString();
         }
 
-        // Remove the action's name from certain routes (e.g. welcome page, store actions, etc.)
+        // Remove the action's name from certain route URI's (e.g. welcome page, store actions, etc.)
         if (
             $this->classname === 'Welcome' ||
-            in_array($action, ['store', 'index'])
+            (CRUD::in($action) && ! CRUD::in($action, CRUD::EDIT, CRUD::CREATE))
         ) {
             $uri = str($uri)->beforeLast("{$action}")->rtrim('/');
         }

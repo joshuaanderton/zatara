@@ -3,12 +3,8 @@
 namespace Zatara;
 
 use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
-use Zatara\Actions\ClientConnect;
 use Zatara\Support\Facades\Zatara as ZataraFacade;
 use Zatara\Support\Zatara;
 
@@ -43,9 +39,5 @@ class ServiceProvider extends BaseServiceProvider
                     $model::where((new $model)->getRouteKeyName(), $value)->firstOrFail()
                 )
             ));
-
-        // Route::middleware(['web'])
-        //     ->match(['get', 'post', 'delete'], 'zatara/{action}', ClientConnect::class)
-        //     ->name('zatara.connection');
     }
 }

@@ -6,7 +6,7 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use ReflectionProperty;
-use Zatara\Objects\Action;
+use Zatara\Support\ZataraObject;
 
 class Zatara
 {
@@ -42,7 +42,7 @@ class Zatara
         $zataraDir = app_path($namespace->replace('\\', '/'));
 
         return $this->actions = collect(File::allFiles($zataraDir))->map(fn ($file) =>
-            (new Action(
+            (new ZataraObject(
                 str_replace('/', '\\', rtrim($file->getRelativePathname(), '.php'))
             ))->toArray()
         );
