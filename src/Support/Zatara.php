@@ -21,15 +21,10 @@ class Zatara
 
     public function namespace(?string ...$namespaces): string
     {
-        $namespace = str('App\\Zatara');
+        $namespace = str('App\\Zatara')->explode('\\');
+        $appends = collect($namespaces)->map(fn ($n) => rtrim($n, '.php'));
 
-        return $namespace
-            ->explode('\\')
-            ->concat(
-                collect($namespaces)
-                    ->map(fn ($n) => rtrim($n, '.php'))
-            )
-            ->join('\\');
+        return $namespace->concat($appends)->join('\\');
     }
 
     public function getActions(): Collection

@@ -19,6 +19,16 @@ class ServiceProvider extends BaseServiceProvider
     {
         $actions = ZataraFacade::getActions();
 
+        // $folders->each(function ($folder) {
+        //     $name = $folder->getDirname();
+        //     $namespace = str($folter->getRelativePath())->explode('/')->map(fn ($str) => $str->snake('-'))->implode('.');
+        //     if ($name === str($name)->plural()->toString()) {
+        //         Route::resource($name, ZataraController::class)->as($namespace);
+        //     } else {
+        //         Route::singleton($name, ZataraController::class)->as($namespace);
+        //     }
+        // };
+
         $actions->each(fn (array $action) => (
             Route::match(
                 $action['methods'],

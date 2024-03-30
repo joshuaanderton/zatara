@@ -86,8 +86,7 @@ class ZataraObject
 
             // Don't add params to index, store, create, or non-crud actions
             if ($paramVal === $lastParamVal && (
-                CRUD::in($action, CRUD::INDEX, CRUD::STORE, CRUD::CREATE) ||
-                ! CRUD::in($action)
+                CRUD::in($action, CRUD::INDEX, CRUD::STORE, CRUD::CREATE)
             )) {
                 continue;
             }
