@@ -58,7 +58,7 @@ class ZataraObject
         $modelNamespace = str('App\\Models\\');
 
         return $this->classnameShards
-            ->map(fn (string $str) => str($str)->snake('-')->singular()->toString())
+            ->map(fn (string $str) => str($str)->snake('_')->singular()->toString())
             ->filter(fn (string $str) => class_exists($modelNamespace->append(str($str)->studly())->toString()))
             ->map(fn (string $str) => [$str => $modelNamespace->append(str($str)->studly())->toString()])
             ->collapse()
