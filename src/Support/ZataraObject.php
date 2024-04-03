@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Stringable;
 use Zatara\Enums\CRUD;
-use Zatara\Support\Zatara;
 
 class ZataraObject
 {

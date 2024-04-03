@@ -19,9 +19,6 @@
         "pestphp/pest-plugin-watch": "^2.1"
     },
     "autoload": {
-        "files": [
-            "src/helpers.php"
-        ],
         "psr-4": {
             "Zatara\\": "src"
         }
