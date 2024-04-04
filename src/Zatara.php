@@ -69,6 +69,7 @@ abstract class Zatara
 
         return $this->render(null, $responseData);
     }
+
     public function render(?string $component, array $data): InertiaResponse
     {
         $component = $component ?: $this->action->inertiaComponent;
