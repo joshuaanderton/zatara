@@ -12,15 +12,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Response as InertiaResponse;
+use Zatara\Enums\CRUD;
 use Zatara\Enums\FlashStyle;
-use Zatara\Support\ZataraObject;
+use Zatara\Support\Facades\Zatara as ZataraFacade;
 
 abstract class Zatara
 {
     /**
      * Handle the incoming request. Return array of data for the current client state or a redirect response to a new state.
      */
-    abstract public function handle(Request $request): array|\Illuminate\Http\RedirectResponse;
+    abstract public function handle(Request $request): array|RedirectResponse;
 
     protected Request $request;
 
@@ -28,17 +29,32 @@ abstract class Zatara
 
     protected ?Team $team;
 
-    protected ZataraObject $action;
-
-    public function __invoke(Request $request): mixed
+    public function __invoke(Request $request): JsonResponse|InertiaResponse|RedirectResponse
     {
-        $this->action = ZataraObject::fromRequest($request);
-
         return $this
             ->setRequest($request)
             ->authorizeCondition($request)
             ->validateRules($request)
             ->getResponse();
+    }
+
+    public function __call(string $name, array $arguments): mixed
+    {
+        if (CRUD::in($name)) {
+            $request = request();
+
+            $actionClassname = str($request->route()->getAction()['as'])
+                ->prepend('app.http.route-actions.')
+                ->explode('.')
+                ->map(fn ($str) => str($str)->studly())
+                ->join('\\');
+
+            $request->merge($arguments);
+
+            return (new $actionClassname)->__invoke($request);
+        }
+
+        return $this->$name(...$arguments);
     }
 
     private function setRequest(Request $request): self
@@ -72,7 +88,11 @@ abstract class Zatara
 
     public function render(?string $component, array $data): InertiaResponse
     {
-        $component = $component ?: $this->action->inertiaComponent;
+        if (! $component) {
+            // Automatically look for the component based on Inertia namespace
+            $routeName = $this->request->route()->getAction()['as'];
+            $component = str($routeName)->explode('.')->map(fn ($str) => str($str)->studly())->join('/');
+        }
 
         if (class_exists(\Laravel\Jetstream\Jetstream::class)) {
             return \Laravel\Jetstream\Jetstream::inertia()->render($this->request, $component, $data);

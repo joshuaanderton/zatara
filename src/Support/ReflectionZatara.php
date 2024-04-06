@@ -2,49 +2,35 @@
 
 namespace Zatara\Support;
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Stringable;
 use Zatara\Enums\CRUD;
 
-class ZataraObject
+class ReflectionZatara
 {
-    public string $classname;
+    private string $classname;
 
     protected Collection $classnameShards;
-
-    public string $uri;
-
-    public array $methods;
-
-    public array $middleware;
-
-    public array $params;
-
-    public string $as;
-
-    public string $inertiaComponent;
-
-    public string $controller;
 
     public function __construct(string $classname)
     {
         $this->classname = $classname;
         $this->classnameShards = str($this->classname)->explode('\\');
-        $this->uri = $this->getUri();
-        $this->methods = $this->getMethods();
-        $this->middleware = $this->getMiddleware();
-        $this->as = $this->getAs();
-        $this->params = $this->getParams();
-        $this->inertiaComponent = $this->getInertiaComponent();
-        $this->controller = $this->getController();
     }
 
-    public static function fromRequest(Request $request): self
+    public function toArray(): array
     {
-        return new static(
-            classname: str($request->route()->getAction('controller'))->before('@')
-        );
+        return [
+            'resource' => str($this->getAs())->beforeLast('.')->toString(),
+            'name' => $this->getName()->toString(),
+            'uri' => $this->getUri(),
+            'params' => $this->getParams(),
+            'action' => [
+                'uses' => [$this->getController(), '__invoke'],
+                'middleware' => $this->getMiddleware(),
+                'as' => $this->getAs(),
+            ],
+        ];
     }
 
     private function getName(): Stringable
@@ -54,6 +40,7 @@ class ZataraObject
 
     private function getParams(): array
     {
+        // TODO: Need way to lookup other models not in App\Models namespace
         $modelNamespace = str('App\\Models\\');
 
         return $this->classnameShards
@@ -142,14 +129,6 @@ class ZataraObject
         return $middleware->toArray();
     }
 
-    private function getInertiaComponent()
-    {
-        return str($this->classname)
-            ->after((new Zatara)->namespace(''))
-            ->replace('\\', '/')
-            ->toString();
-    }
-
     private function getMethods(): array
     {
         $method = match ($this->getName()->toString()) {
@@ -166,24 +145,8 @@ class ZataraObject
         return [$method];
     }
 
-    public function getController()
+    private function getController()
     {
         return (new Zatara)->namespace($this->classname);
-    }
-
-    public function toArray()
-    {
-        return [
-            'uri' => $this->uri,
-            'inertia_page' => $this->inertiaComponent,
-            'methods' => $this->methods,
-            'params' => $this->params,
-            'action' => [
-                'uses' => [$this->controller, '__invoke'],
-                'controller' => $this->controller,
-                'middleware' => $this->middleware,
-                'as' => $this->as,
-            ],
-        ];
     }
 }
